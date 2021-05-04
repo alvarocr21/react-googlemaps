@@ -1,3 +1,3 @@
 export default{
-    mapsKey:"AIzaSyArpi5ZUu2YkzjyMDndEEu1uFDn0upcTlw"
+    mapsKey:"AIzaSyAOn_y0rnCBha0j4UiZ_FZY2ecgIgekO7A"
 }
