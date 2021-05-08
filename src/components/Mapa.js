@@ -38,13 +38,12 @@ const options = {
 };
 
 const Map = () => {
- 
   const { isLoaded, loadError } = useLoadScript({
     //googleMapsApiKey: process.env.REACT_APP_API_KEY_GOOGLE_MAPS,
     googleMapsApiKey: credentials.mapsKey,
     libraries,
   });
-  
+
   const [markers, setMarkers] = React.useState([]);
   const [selected, setSelected] = React.useState(null);
   const onMapClick = React.useCallback((event) => {
@@ -59,15 +58,15 @@ const Map = () => {
   }, []);
 
   const mapRef = React.useRef();
-  const onMapLoad = React.useCallback((map)=>{
+  const onMapLoad = React.useCallback((map) => {
     mapRef.current = map;
-  },[]);
+  }, []);
 
-  const panTo = React.useCallback(({lat,lng})=>{
-    console.log(mapRef)
-    mapRef.current.panTo({lat,lng});
+  const panTo = React.useCallback(({ lat, lng }) => {
+    console.log(mapRef);
+    mapRef.current.panTo({ lat, lng });
     mapRef.current.setZoom(14);
-  },[])
+  }, []);
 
   if (loadError) return "Error al cargar el mapa";
   if (!isLoaded) return "Loading Maps";
@@ -76,8 +75,8 @@ const Map = () => {
     <div>
       <h1>Agricultores 🧑‍🌾</h1>
 
-      <Search panTo={panTo}/>
-
+      <Search panTo={panTo} />
+      <Locate panTo={panTo} />
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         zoom={12}
@@ -115,48 +114,76 @@ const Map = () => {
   );
 };
 
-function Search({panTo}) {
+function Locate({ panTo }) {
+  return (
+    <button
+      className="locate"
+      onClick={() => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+          panTo({
+            lat:position.coords.latitude,
+            lng:position.coords.longitude,
+          });
+          },
+          () => null
+        );
+      }}
+    >
+      <img src="ubicacion.png" alt="Mi Ubicacion" />
+    </button>
+  );
+}
+
+function Search({ panTo }) {
   const {
     ready,
     value,
     suggestions: { status, data },
     setValue,
-    clearSuggestion,
+    clearSuggestions,
   } = usePlacesAutocomplete({
     requestOptions: {
       location: { lat: () => 9.9348041, lng: () => -84.1020275 },
-      radius: 50 * 1000,
+      radius: 25 * 1000,
     },
   });
   return (
     <div className="search">
-       <Combobox onSelect={async (address)=>{
-         try{
-          const results = await getGeocode ({address});
-          const {lat, lng} = await getLatLng(results[0]);
-          panTo({lat,lng});
-         }catch(error)
-         {
-           console.log("error")
-         }
-    console.log(address);
-  }}>
-    <ComboboxInput value={value} onChange={(e)=>{
-      setValue(e.target.value);
-    }}
-    disabled={!ready}
-    placeholder = "Ingrese una ubicación"
-    />
-    <ComboboxPopover>
-      {status==="OK" && data.map(({id,description})=>(
-        <ComboboxOption key={id} value={description}/>
-      ))}
-    </ComboboxPopover>
-  </Combobox>
+      <Combobox
+        onSelect={async (address) => {
+          setValue(address, false);
+          clearSuggestions();
+
+          try {
+            const results = await getGeocode({ address });
+            const { lat, lng } = await getLatLng(results[0]);
+            panTo({ lat, lng });
+          } catch (error) {
+            console.log("error");
+          }
+          console.log(address);
+        }}
+      >
+        <ComboboxInput
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+          }}
+          disabled={!ready}
+          placeholder="Ingrese una ubicación"
+        />
+        <ComboboxPopover>
+          <ComboboxList>
+            {status === "OK" &&
+              data.map(({ id, description }) => (
+                <ComboboxOption key={id} value={description} />
+              ))}
+          </ComboboxList>
+        </ComboboxPopover>
+      </Combobox>
     </div>
-   
   );
-  
 }
 //<a href='https://www.freepik.es/vectores/diseno'>Vector de Diseño creado por macrovector - www.freepik.es</a>
 export default Map;
